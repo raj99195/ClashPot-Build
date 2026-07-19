@@ -77,6 +77,7 @@
 			
 			createUnityInstance(canvas, config, progressHandler).then(function (instance)
 			{
+				window.unityInstance = instance; // ArcadeX SDK needs this to call SendMessage into Unity
 				canvas = instance.Module.canvas;
 				onResize();
 			});
