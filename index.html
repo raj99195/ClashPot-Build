@@ -17,14 +17,14 @@
 	<div id="container">
 		<canvas id="game-canvas" data-pixel-art=""></canvas>
                 <script src="arcade-sdk-unity.js"></script>
-		<script src="Build/ClashPot-Build.loader.js"></script>
+		<script src="Build/ClashPot-WebglBuild.loader.js"></script>
 		<script>
 			var canvas = document.querySelector("#game-canvas");
 			var config =
 			{
-				dataUrl: "Build/ClashPot-Build.data",
-				frameworkUrl: "Build/ClashPot-Build.framework.js",
-				codeUrl: "Build/ClashPot-Build.wasm",
+				dataUrl: "Build/ClashPot-WebglBuild.data",
+				frameworkUrl: "Build/ClashPot-WebglBuild.framework.js",
+				codeUrl: "Build/ClashPot-WebglBuild.wasm",
 				streamingAssetsUrl: "StreamingAssets",
 				companyName: "DefaultCompany",
 				productName: "ClashPot",
