@@ -9,6 +9,12 @@
  *   arcade_gameOver(finalScore)
  *   arcade_pause()
  *   arcade_resume()
+ *
+ * NOTE: index.html must set `window.unityInstance = instance;` inside the
+ * createUnityInstance(...).then(...) callback — modern Unity WebGL loaders
+ * (createUnityInstance) do NOT expose a global SendMessage function, only
+ * instance.SendMessage(). Without that, every sendToUnity() call below is a
+ * silent no-op — no error, no warning, nothing reaches C#.
  */
 
 (function (global) {
@@ -57,52 +63,48 @@
         window.postMessage(msg, "*");
       } catch (e) { console.error("[ArcadeSDK] postMessage error:", e); }
     },
-_onMessage: function (e) {
-    var d = e.data;
-    if (!d || !d._platform) return;
 
-    if (d.type === "TRANSACTION_SUCCESS") {
+    // ─── Unity bridge — replaces the old `if (typeof SendMessage === "function")` checks ───
+    _sendToUnity: function (obj, method, value) {
+      if (window.unityInstance && typeof window.unityInstance.SendMessage === "function") {
+        try {
+          window.unityInstance.SendMessage(obj, method, value);
+        } catch (e) {
+          console.error("[ArcadeSDK] SendMessage failed:", obj, method, e);
+        }
+      } else {
+        console.warn("[ArcadeSDK] unityInstance not ready — dropped message:", obj, method, value);
+      }
+    },
+
+    _onMessage: function (e) {
+      var d = e.data;
+      if (!d || !d._platform) return;
+
+      if (d.type === "TRANSACTION_SUCCESS") {
         this._log("✅ On-chain!", d.txHash);
 
         if (typeof this.onSuccess === "function")
-            this.onSuccess(d.txHash);
+          this.onSuccess(d.txHash);
 
-        if (typeof SendMessage === "function") {
-            try {
-                SendMessage("ArcadeManager", "OnTransactionSuccess", d.txHash || "");
-            } catch (e) {}
-        }
-    }
+        this._sendToUnity("ArcadeManager", "OnTransactionSuccess", d.txHash || "");
+      }
 
-    if (d.type === "TRANSACTION_FAILED") {
+      if (d.type === "TRANSACTION_FAILED") {
         console.warn("[ArcadeSDK] ❌ TX Failed:", d.error);
 
         if (typeof this.onError === "function")
-            this.onError(d.error);
+          this.onError(d.error);
 
-        if (typeof SendMessage === "function") {
-            try {
-                SendMessage("ArcadeManager", "OnTransactionFailed", d.error || "");
-            } catch (e) {}
-        }
-    }
+        this._sendToUnity("ArcadeManager", "OnTransactionFailed", d.error || "");
+      }
 
-    if (d.type === "PLAYER_INFO") {
+      if (d.type === "PLAYER_INFO") {
         this._log("👤 Player Info", d.player);
 
-        if (typeof SendMessage === "function") {
-            try {
-                SendMessage(
-                    "ArcadeManager",
-                    "OnPlayerInfoReceived",
-                    JSON.stringify(d.player || {})
-                );
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    }
-},
+        this._sendToUnity("ArcadeManager", "OnPlayerInfoReceived", JSON.stringify(d.player || {}));
+      }
+    },
 
     _log: function () {
       if (this.debug) { var a = Array.prototype.slice.call(arguments); a.unshift("[ArcadeSDK Unity]"); console.log.apply(console, a); }
