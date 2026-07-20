@@ -104,6 +104,22 @@
 
         this._sendToUnity("ArcadeManager", "OnPlayerInfoReceived", JSON.stringify(d.player || {}));
       }
+
+      // ─── ClashPot Escrow ─────────────────────────────────────
+      if (d.type === "CLASHPOT_JOIN_SUCCESS") {
+        this._log("✅ Escrow deposit success", d.txHash);
+        this._sendToUnity("ArcadeManager", "OnEscrowJoinSuccess", d.txHash || "");
+      }
+
+      if (d.type === "CLASHPOT_JOIN_FAILED") {
+        console.warn("[ArcadeSDK] ❌ Escrow deposit failed:", d.error);
+        this._sendToUnity("ArcadeManager", "OnEscrowJoinFailed", d.error || "Deposit failed");
+      }
+
+      if (d.type === "CLASHPOT_SETTLE_SUCCESS") {
+        this._log("✅ Match settled on-chain", d.txHash);
+        this._sendToUnity("ArcadeManager", "OnSettleSuccess", d.txHash || "");
+      }
     },
 
     _log: function () {
@@ -144,5 +160,19 @@
         gameId: ArcadeSDK.gameId
     });
 };
+
+
+  // ClashPot: stake deposit request — jslib ise call kar sakta hai
+  global.arcade_joinEscrow = function (matchKeyPtr, stakeWeiPtr) {
+    var matchKey = typeof matchKeyPtr === "string" ? matchKeyPtr : UTF8ToString(matchKeyPtr);
+    var stakeWei = typeof stakeWeiPtr === "string" ? stakeWeiPtr : UTF8ToString(stakeWeiPtr);
+    ArcadeSDK._log("ClashPot joinEscrow", matchKey, stakeWei);
+    ArcadeSDK._post({
+      type: "CLASHPOT_JOIN",
+      matchKey: matchKey,
+      stakeWei: stakeWei,
+      gameId: ArcadeSDK.gameId
+    });
+  };
 
 })(typeof window !== "undefined" ? window : this);

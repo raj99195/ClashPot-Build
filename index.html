@@ -96,45 +96,6 @@
 			}
 		</script>
 	</div>
-
-		<!-- ClashPot Escrow Bridge -->
-		<!-- 
-		  Ye script iframe (game) aur parent (ArcadeX platform) ke beech
-		  CLASHPOT_JOIN messages relay karta hai.
-		  
-		  Flow:
-		  1. Unity → arcade_joinEscrow() → arcade-sdk-unity.js → postMessage(CLASHPOT_JOIN) [parent ko]
-		  2. Platform page: wallet se join() tx kare → postMessage(CLASHPOT_JOIN_SUCCESS, _platform:true) [iframe ko]
-		  3. Ye script: parent se message receive karke ArcadeSDK._onMessage route karta hai
-		     jo Unity ko OnEscrowJoinSuccess/Failed bhejta hai
-		-->
-		<script>
-		  window.addEventListener('message', function(e) {
-		    var d = e.data;
-		    if (!d) return;
-
-		    // Parent platform se aane wale responses
-		    if (d._platform && (
-		      d.type === 'CLASHPOT_JOIN_SUCCESS' ||
-		      d.type === 'CLASHPOT_JOIN_FAILED'  ||
-		      d.type === 'CLASHPOT_SETTLE_SUCCESS' ||
-		      d.type === 'PLAYER_INFO' ||
-		      d.type === 'TRANSACTION_SUCCESS' ||
-		      d.type === 'TRANSACTION_FAILED'
-		    )) {
-		      // ArcadeSDK ka _onMessage directly call karo
-		      if (window.ArcadeSDK && typeof window.ArcadeSDK._onMessage === 'function') {
-		        window.ArcadeSDK._onMessage(e);
-		      }
-		      return;
-		    }
-
-		    // Game se parent ko relay karo (CLASHPOT_JOIN, GET_PLAYER_INFO, etc.)
-		    if (d._arcadex && window.parent && window.parent !== window) {
-		      window.parent.postMessage(d, '*');
-		    }
-		  });
-		</script>
 </body>
 
 </html>
