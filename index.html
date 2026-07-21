@@ -16,15 +16,46 @@
 <body>
 	<div id="container">
 		<canvas id="game-canvas" data-pixel-art=""></canvas>
-                <script src="arcade-sdk-unity.js"></script>
-		<script src="Build/ClashPot-WebglBuild.loader.js"></script>
+
+		<!--
+		  Socket.IO client — LOCAL file se, CDN se NAHI.
+
+		  ⚠️ Pehle ye jslib se runtime pe cdn.socket.io se load hota tha, aur
+		     playarcadex.in pe block ho gaya:
+		         "socket.io client load failed: https://cdn.socket.io/4.7.5/socket.io.min.js"
+		     Uske baad socket kabhi connect nahi hua aur join_room bhi nahi gaya.
+		     CSP / ad-blocker / network — kuch bhi wajah ho sakti hai.
+
+		  Ab file build ke saath hi ship hoti hai (same origin), toh block hone ka
+		  sawaal hi nahi. Version server ke socket.io se match hona chahiye (v4).
+		-->
+		<script src="socket.io.min.js"></script>
+
+		<!-- ArcadeX SDK — Unity ke loader se PEHLE load hona chahiye -->
+		<script src="arcade-sdk-unity.js"></script>
+
+		<!--
+		  ⚠️ BUILD NAAM
+		  Unity output files ka naam build FOLDER ke naam se rakhta hai.
+		  Abhi build ka naam "ClashPot-Build" hai, isliye files:
+		      Build/ClashPot-Build.loader.js
+		      Build/ClashPot-Build.data
+		      Build/ClashPot-Build.framework.js
+		      Build/ClashPot-Build.wasm
+
+		  Agar aage kabhi alag naam ke folder me build karo, to ye 4 jagah
+		  neeche update karni padengi — warna 404 aayega aur
+		  "createUnityInstance is not defined" error milega.
+		-->
+		<script src="Build/ClashPot-Build.loader.js"></script>
+
 		<script>
 			var canvas = document.querySelector("#game-canvas");
 			var config =
 			{
-				dataUrl: "Build/ClashPot-WebglBuild.data",
-				frameworkUrl: "Build/ClashPot-WebglBuild.framework.js",
-				codeUrl: "Build/ClashPot-WebglBuild.wasm",
+				dataUrl: "Build/ClashPot-Build.data",
+				frameworkUrl: "Build/ClashPot-Build.framework.js",
+				codeUrl: "Build/ClashPot-Build.wasm",
 				streamingAssetsUrl: "StreamingAssets",
 				companyName: "DefaultCompany",
 				productName: "ClashPot",
@@ -37,14 +68,14 @@
 			} catch (e) {
 				scaleToFit = true;
 			}
-			
+
 			function progressHandler(progress)
 			{
 				var percent = progress * 100 + '%';
 				canvas.style.background = 'linear-gradient(to right, white, white ' + percent + ', transparent ' + percent + ', transparent) no-repeat center';
 				canvas.style.backgroundSize = '100% 1rem';
 			}
-			
+
 			function onResize()
 			{
 				var container = canvas.parentElement;
@@ -62,7 +93,7 @@
 						w = Math.min(w, Math.ceil(h / r));
 					}
 					h = Math.floor(w * r);
-				} 
+				}
 				else
 				{
 					w = 1080;
@@ -74,21 +105,22 @@
 				container.style.top = Math.floor((window.innerHeight - h) / 2) + "px";
 				container.style.left = Math.floor((window.innerWidth - w) / 2) + "px";
 			}
-			
+
 			createUnityInstance(canvas, config, progressHandler).then(function (instance)
 			{
-				window.unityInstance = instance; // ArcadeX SDK needs this to call SendMessage into Unity
+				window.unityInstance = instance; // ArcadeX SDK ko SendMessage ke liye ye chahiye
 				canvas = instance.Module.canvas;
 				onResize();
+			}).catch(function (err) {
+				console.error("[ClashPot] Unity load failed:", err);
 			});
-			
+
 			window.addEventListener('resize', onResize);
 			onResize();
 
 			// Style for mobile devices.
 			if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent))
 			{
-				// Fill the whole browser client area with the game canvas.
 				const meta = document.createElement('meta');
 				meta.name = 'viewport';
 				meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
